@@ -654,23 +654,21 @@ def horizontal_mean_diff_rms(grd, basins, args, obs, OUTDIR):
     cluster.scale(args.number_of_workers)
     client = Client(cluster)
 
-  def preprocess(ds):
-    if 'thetao' not in ds.variables:
-        ds["thetao"] = xr.zeros_like(ds.h)
-    if 'so' not in ds.variables:
-        ds["so"] = xr.zeros_like(ds.h)
-
+  def preprocess(ds, var):
+    if var not in ds:
+        ds[var] = xr.zeros_like(ds.h)
     return ds
 
   # read dataset
   startTime = datetime.now()
   print('Reading dataset...')
-  ds1 = xr.open_mfdataset(OUTDIR+'/'+args.z, parallel=parallel)
-  ds = preprocess(ds1)
+  ds1 = xr.open_mfdataset(OUTDIR+'/'+args.z, parallel=parallel,
+                          data_vars='minimal', compat='override', coords='minimal')
 
-  if (var not in ds):
+  if (var not in ds1):
     raise ValueError("The variable requested is not available in the history files of this simulation. \
                      Only thetao and so are available at this time.")
+  ds = preprocess(ds1, var)
 
   units = ds[var].units
 
