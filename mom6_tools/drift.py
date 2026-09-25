@@ -659,6 +659,9 @@ def horizontal_mean_diff_rms(grd, basins, args, obs, OUTDIR, jobqueue_config=Non
                      Only thetao and so are available at this time.")
   ds = preprocess(ds1, var)
 
+  print(f'Selecting data between {dcase.ts_start_date} and {dcase.ts_end_date}...')
+  ds = ds.sel(time=slice(dcase.ts_start_date, dcase.ts_end_date))
+
   units = ds[var].units
 
   if args.debug:

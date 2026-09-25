@@ -92,17 +92,19 @@ def main():
                          chunks={'time': 12})
   print('Time elasped: ', datetime.now() - startTime)
 
-  # compute yearly means first since this will be used in the time series
   attrs = {
          'description': 'Annual mean meridional thickness flux by components ',
          'reduction_method': 'annual mean weighted by days in each month',
          'casename': args.casename
          }
-  print('Computing yearly means...')
+
+  # compute annual means first since this will also be used in the time series
+  print('Computing annual means...')
   startTime = datetime.now()
   ds_ann = m6toolbox.weighted_temporal_mean_vars(ds, attrs=attrs)
   print('Time elasped: ', datetime.now() - startTime)
 
+  # Select data between the start and end dates for time mean plots
   startTime = datetime.now()
   print('Selecting data between {} and {}...'.format(args.start_date, args.end_date))
   ds_sel = ds_ann.sel(time=slice(args.start_date, args.end_date))
@@ -111,6 +113,12 @@ def main():
   print('Computing time mean...')
   startTime = datetime.now()
   ds_mean = ds_sel.mean('time').compute()
+  print('Time elasped: ', datetime.now() - startTime)
+
+  # Select data between the start and end dates for time series plots
+  startTime = datetime.now()
+  print('Selecting data between {} and {}...'.format(dcase.ts_start_date, dcase.ts_end_date))
+  ds_sel = ds_ann.sel(time=slice(dcase.ts_start_date, dcase.ts_end_date))
   print('Time elasped: ', datetime.now() - startTime)
 
   # create a ndarray subclass
@@ -160,14 +168,16 @@ def main():
                                 'ipmoc' :     (('zl','yq'), np.zeros(psiPlot.shape)),
                                 'moc_FFH' :   (('zl','yq'), np.zeros(psiPlot.shape)),
                                 'moc_GM' :    (('zl','yq'), np.zeros(psiPlot.shape)),
-                                'amoc_45' :   (('time'), np.zeros(ds_ann.time.shape)),
-                                'moc_GM_ACC': (('time'), np.zeros(ds_ann.time.shape)),
-                                'moc_70S' :   (('time'), np.zeros(ds_ann.time.shape)),
-                                'moc_35S' :   (('time'), np.zeros(ds_ann.time.shape)),
-                                'amoc_26' :   (('time'), np.zeros(ds_ann.time.shape)) },
-                            coords={'zl': zl, 'yq': ds.yq, 'time': ds_ann.time})
+                                'amoc_45' :   (('time'), np.zeros(ds_sel.time.shape)),
+                                'moc_GM_ACC': (('time'), np.zeros(ds_sel.time.shape)),
+                                'moc_70S' :   (('time'), np.zeros(ds_sel.time.shape)),
+                                'moc_35S' :   (('time'), np.zeros(ds_sel.time.shape)),
+                                'amoc_26' :   (('time'), np.zeros(ds_sel.time.shape)) },
+                            coords={'zl': zl, 'yq': ds.yq, 'time': ds_sel.time})
   attrs = {'description': 'MOC time-mean sections and time-series', 'units': 'Sv',
-           'start_date': dcase.start_date, 'end_date': dcase.end_date, 'casename': args.casename}
+           'start_date': args.start_date, 'end_date': args.end_date,
+           'ts_start_date': dcase.ts_start_date, 'ts_end_date': dcase.ts_end_date,
+           'casename': args.casename}
   m6toolbox.add_global_attrs(moc, attrs)
 
   m6plot.setFigureSize([16,9],576,debug=False)
@@ -250,8 +260,8 @@ def main():
   startTime = datetime.now()
 
   # Load all annual data at once — one dask graph evaluation vs T separate ones
-  vmo_all  = np.ma.filled(np.ma.masked_invalid(ds_ann['vmo'].values),  0.)  # (T,K,J,I)
-  vhGM_all = np.ma.filled(np.ma.masked_invalid(ds_ann['vhGM'].values), 0.)  # (T,K,J,I)
+  vmo_all  = np.ma.filled(np.ma.masked_invalid(ds_sel['vmo'].values),  0.)  # (T,K,J,I)
+  vhGM_all = np.ma.filled(np.ma.masked_invalid(ds_sel['vhGM'].values), 0.)  # (T,K,J,I)
 
   # Compute streamfunctions for all time steps at once
   psi_atl_all = MOCpsi(vmo_all, vmsk=vmsk_atl) * conversion_factor   # (T,K+1,J)
