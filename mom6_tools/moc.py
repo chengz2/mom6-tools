@@ -69,8 +69,8 @@ def main():
     depth = grd.deptho
   basin_code_xr = m6toolbox.genBasinMasks(grd.geolon, grd.geolat, depth, basin_from_file=args.basin)
 
-  # Atlantic, Arctic, Med, Black and Hudson Bay combined
-  atl_regions = ['AtlanticOcean', 'Arctic', 'MedSea', 'BlackSea', 'HudsonBay']
+  # Atlantic, Arctic, Med, Baltic and Hudson Bay combined
+  atl_regions = ['AtlanticOcean', 'Arctic', 'MedSea', 'BalticSea', 'HudsonBay']
 
   parallel, cluster, client = get_cluster(nw, args=args,
                                           config=dcase.jobqueue_config)
@@ -200,7 +200,7 @@ def main():
   # Atlantic MOC
   m6plot.setFigureSize([16,9],576,debug=False)
   cmap = plt.get_cmap('dunnePM')
-  # Atlantic, Arctic, Med, Black and Hudson Bay combined
+  # Atlantic, Arctic, Med, Baltic and Hudson Bay combined
   m = (basin_code_xr.sel(region=atl_regions).sum('region') > 0).astype(int).values
   ci=m6plot.pmCI(0.,22.,2.)
   z = (m*Zmod).min(axis=-1)
